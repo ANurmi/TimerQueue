@@ -9,7 +9,8 @@ module apb_timer_queue #(
            APB.Slave        apb_sbr
 );
 
-  assign apb_sbr.pslverr   = 1'b0;
-  assign apb_sbr.pready = apb_sbr.psel & apb_sbr.penable;
+  assign apb_sbr.prdata  = 32'b0;
+  assign apb_sbr.pslverr = 1'b0;
+  assign apb_sbr.pready  = apb_sbr.psel & apb_sbr.penable;
 
 endmodule : apb_timer_queue
