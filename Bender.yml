@@ -11,4 +11,6 @@ dependencies:
 sources:
   - target: rtl
     files:
+      - rtl/binary_tree.sv
+      - rtl/priority_queue.sv
       - rtl/apb_timer_queue.sv
