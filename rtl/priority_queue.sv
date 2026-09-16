@@ -19,7 +19,7 @@ module priority_queue #(
     input  logic [    IdxWidth-1:0] drop_ptr_i,
     input  logic [PayloadWidth-1:0] push_payload_i,
     output logic [PayloadWidth-1:0] payload_o,
-    output logic [   TimeWidth-1:0] peek_data_o,
+    output logic [   TimeWidth-1:0] peek_timestamp_o,
     output logic [   TimeWidth-1:0] drop_timestamp_o,
     output logic [PayloadWidth-1:0] drop_payload_o
 );
@@ -38,16 +38,16 @@ module priority_queue #(
   logic [IdxWidth-1:0]                top_idx;
   logic [IdxWidth-1:0] top_ptr_d, top_ptr_q;
   logic [IdxWidth-1:0] free_ptr_d, free_ptr_q;
-  logic push_d, push_q;
+  //logic push_d, push_q;
 
-  assign full_o = &valid;
-  assign empty_o = ~(|valid);
-  assign push_d = push_i;
+  assign full_o           = &valid;
+  assign empty_o          = ~(|valid);
+  //assign push_d = push_i;
 
-  assign top_ptr_d = entry_q[top_idx].idx;
-  assign peek_data_o = entry_q[top_idx].dispatch;
-  assign free_ptr_o = free_ptr_q;
-  assign top_ptr_o = top_ptr_q;
+  assign top_ptr_d        = entry_q[top_idx].idx;
+  assign peek_timestamp_o = entry_q[top_idx].dispatch;
+  assign free_ptr_o       = free_ptr_q;
+  assign top_ptr_o        = top_ptr_q;
 
   always_comb begin : access_logic
 
@@ -56,7 +56,7 @@ module priority_queue #(
     drop_timestamp_o = TimeWidth'('0);
     drop_payload_o   = PayloadWidth'('0);
 
-    if (push_q) begin
+    if (push_i) begin
       entry_d[free_ptr_q].dispatch = push_timestamp_i;
       entry_d[free_ptr_q].payload  = push_payload_i;
       entry_d[free_ptr_q].valid    = 1'b1;
@@ -79,11 +79,11 @@ module priority_queue #(
     if (~rst_ni) begin
       top_ptr_q  <= IdxWidth'('0);
       free_ptr_q <= IdxWidth'('0);
-      push_q     <= 1'b0;
+      //push_q     <= 1'b0;
     end else begin
       top_ptr_q  <= top_ptr_d;
       free_ptr_q <= free_ptr_d;
-      push_q     <= push_d;
+      //push_q     <= push_d;
     end
   end
 
@@ -95,7 +95,7 @@ module priority_queue #(
     end
   end
 
-  for (genvar i = 0; i < Depth; i++) begin : depth_loop
+  for (genvar i = 0; i < Depth; i++) begin : g_depth_loop
     always_ff @(posedge clk_i) begin : ff_no_rst
       entry_q[i].dispatch <= entry_d[i].dispatch;
       entry_q[i].payload  <= entry_d[i].payload;

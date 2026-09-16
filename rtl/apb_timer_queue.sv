@@ -16,15 +16,20 @@ module apb_timer_queue #(
 
   localparam logic [7:0] StatusAddr = 8'h00;
   localparam logic [7:0] ControlAddr = 8'h04;
-  localparam logic [7:0] HandleAddr = 8'h08;
+  //localparam logic [7:0] HandleAddr = 8'h08;
   localparam logic [7:0] RelTsAddr = 8'h0C;
   localparam logic [7:0] AbsTsLoAddr = 8'h10;
   localparam logic [7:0] AbsTsHiAddr = 8'h14;
+
+  logic full, empty;
 
   logic [31:0] rel_ts_q, rel_ts_d;
   logic [63:0] abs_ts_q, abs_ts_d;
 
   logic [63:0] push_ts;
+  logic [63:0] peek_ts;
+
+  logic [IrqWidth-1:0] pop_payload, push_payload;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) begin
@@ -45,6 +50,15 @@ module apb_timer_queue #(
   assign apb_sbr.pslverr = 1'b0;
   assign apb_sbr.pready = apb_sbr.psel & apb_sbr.penable;
 
+  assign pop = (peek_ts <= mtime_i) & ~empty;
+
+  always_comb begin : irq_dispatch
+    irq_pl_o = NrIrqs'('0);
+    for (int i = 0; i < NrIrqs; i++) begin
+      if ((IrqWidth'(i) == pop_payload) & pop) irq_pl_o[i] = 1'b1;
+    end
+  end
+
   always_comb begin : apb_access
 
     apb_sbr.prdata = 32'h0;
@@ -53,7 +67,6 @@ module apb_timer_queue #(
     push_ts        = 64'h0;
 
     push           = 1'b0;
-    pop            = 1'b0;
     drop           = 1'b0;
 
     unique case (apb_sbr.paddr[7:0])
@@ -64,20 +77,22 @@ module apb_timer_queue #(
       ControlAddr:  // WO
       if (apb_event & apb_sbr.pwrite) begin
         if (apb_sbr.pwdata[0]) begin
-          push    = 1'b1;
-          push_ts = mtime_i + 64'(rel_ts_q);
+          push         = 1'b1;
+          push_ts      = mtime_i + 64'(rel_ts_q);
+          push_payload = IrqWidth'(apb_sbr.pwdata[31:24]);
         end else if (apb_sbr.pwdata[1]) begin
-          push = 1'b1;
+          push    = 1'b1;
           push_ts = abs_ts_q;
+          push_payload = IrqWidth'(apb_sbr.pwdata[31:24]);
         end else if (apb_sbr.pwdata[2]) begin
-          drop = 1'b1;
+          //drop = 1'b1;
         end
       end
-
+      /*
       HandleAddr:  // RO
       if (apb_event & ~apb_sbr.pwrite) begin
       end
-
+     */
       RelTsAddr:  // RW
       if (apb_event) begin
         if (apb_sbr.pwrite) begin
@@ -116,20 +131,20 @@ module apb_timer_queue #(
       .clk_i,
       .rst_ni,
       .push_i          (push),
-      .push_payload_i  (),
+      .push_payload_i  (push_payload),
       .push_timestamp_i(push_ts),
       .drop_i          (drop),
       .drop_ptr_i      (),
       .drop_payload_o  (),
       .drop_timestamp_o(),
       .pop_i           (pop),
-      .empty_o         (),
-      .full_o          (),
+      .empty_o         (empty),
+      .full_o          (full),
       .top_ptr_o       (),
       .btm_ptr_o       (),
       .free_ptr_o      (),
-      .peek_data_o     (),
-      .payload_o       ()
+      .peek_timestamp_o(peek_ts),
+      .payload_o       (pop_payload)
   );
 
 endmodule : apb_timer_queue
