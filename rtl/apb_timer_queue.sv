@@ -52,6 +52,11 @@ module apb_timer_queue #(
 
   assign pop = (peek_ts <= mtime_i) & ~empty;
 
+  // TODO: implement
+  assign irq_full_o = 1'b0;
+  assign irq_nfull_o = 1'b0;
+
+
   always_comb begin : irq_dispatch
     irq_pl_o = NrIrqs'('0);
     for (int i = 0; i < NrIrqs; i++) begin
