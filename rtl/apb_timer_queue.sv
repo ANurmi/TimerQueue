@@ -73,6 +73,7 @@ module apb_timer_queue #(
 
     push           = 1'b0;
     drop           = 1'b0;
+    push_payload   = IrqWidth'(0);
 
     unique case (apb_sbr.paddr[7:0])
       StatusAddr:  // RO
